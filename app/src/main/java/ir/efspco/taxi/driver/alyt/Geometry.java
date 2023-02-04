@@ -1,6 +1,8 @@
 package ir.efspco.taxi.driver.alyt;
 
 
+import android.util.Log;
+
 public class Geometry {
     public static APoint findRelativePosition(APoint point, APoint tl, APoint tr, APoint bl, APoint br) {
         float areaW = areaTriangle(tl, point, bl);
@@ -11,8 +13,10 @@ public class Geometry {
         float x = distance2Point(tl, bl);
         float y = distance2Point(tl, tr);
         float areaAll = x * y;
-        if (areaAll < (areaW + areaS + areaE + areaN))
+        if ((int)(areaAll*100000)< (int)((areaW + areaS + areaE + areaN)*100000) ){
             return null;
+
+        }
         float x1 = areaW * 2 * 100 / areaAll;
         float y1 = areaN * 2 * 100 / areaAll;
         return new APoint(x1, y1);

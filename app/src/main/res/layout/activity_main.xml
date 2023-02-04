@@ -6,12 +6,26 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <fragment
+    <org.neshan.mapsdk.MapView
         android:id="@+id/map"
+
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.5" />
+
+    <RelativeLayout
+        android:visibility="gone"
+        android:id="@+id/googleMapLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    <fragment
+        android:id="@+id/mapGoogle"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context=".MapsActivity" />
+    </RelativeLayout>
 
     <RelativeLayout
         android:id="@+id/options"
@@ -21,22 +35,66 @@
         android:focusable="false">
 
 
-
         <ProgressBar
             android:id="@+id/btn"
             android:layout_width="30dp"
             android:layout_height="30dp"
-android:background="#f0f"
             android:alpha="0.3"
-            android:transformPivotY="100dp"
-            android:transformPivotX="50dp"
+            android:background="#f0f"
             android:clickable="false"
-            android:focusable="false"/>
-
-
+            android:focusable="false"
+            android:transformPivotX="50dp"
+            android:transformPivotY="100dp" />
 
 
     </RelativeLayout>
 
+    <LinearLayout
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical">
 
+        <TextView
+            android:id="@+id/txt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#fff"
+            android:gravity="center"
+            android:padding="5dp"
+            android:text="asfa"
+            android:textColor="#000"
+            android:textSize="20dp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/txt1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:background="#fff"
+            android:gravity="center"
+            android:padding="5dp"
+            android:text="asfa"
+            android:textColor="#000"
+            android:textSize="20dp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <Button
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:text="add"
+
+        android:id="@+id/btnAddMarker"
+        android:layout_width="120dp"
+        android:layout_height="50dp" />
+    <Button
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:id="@+id/btnChangeMap"
+        android:layout_width="120dp"
+        android:text="change"
+        android:layout_height="50dp" />
 </RelativeLayout>
