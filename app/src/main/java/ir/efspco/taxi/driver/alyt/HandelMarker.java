@@ -98,6 +98,7 @@ public class HandelMarker {
 
     static int tilePixel = 512;
     static int earthRadius = 6378160;
+    static double angle = 0;
     static float f = (float) (earthRadius * 2 * Math.PI / tilePixel);
 
     public static void refreshMarkers(double cLat, double cLng, float zoom, float bearing, View rootLayout) {
@@ -110,10 +111,27 @@ public class HandelMarker {
                     (float) ((rootLayout.getWidth() - tilePixel / 2) / 2 * metersPerPx) / 1000);
             double[] latlng2 = destinationPoint(cLat, cLng, -90,
                     (float) ((rootLayout.getWidth() - tilePixel / 2) / 2 * metersPerPx) / 1000);
+
+
             LatLng topRight = new LatLng(latlng[0], latlng1[1]);
             LatLng topLeft = new LatLng(latlng[0], latlng2[1]);
             LatLng center = new LatLng(cLat, cLng);
-            refreshMarkers(topLeft, topRight, center, zoom, bearing, rootLayout);
+
+            if (bearing != 0) {
+                double dist = distance(latlng[0], latlng1[1], cLat, cLng)/1000;
+                if (angle == 0) {
+                    double chord = Math.sqrt(Math.pow(rootLayout.getWidth(), 2) + Math.pow(rootLayout.getHeight(), 2));
+                    angle = toDeg(Math.acos(rootLayout.getWidth() / chord));
+                }
+                double[] tr = destinationPoint(cLat, cLng, 90-angle-bearing, dist);
+                double[] tl = destinationPoint(cLat, cLng, -(90-angle+bearing), dist);
+//                Log.i("TAG", "refreshMarkers: "+cLat+"  "+cLng+" "+(90-angle)+"  "+ dist);
+                Log.i("TAG", "refreshMarkers: "+tr[0]+ " , "+ tr[1] +"                 "+tl[0]+" , "+ tl[1]);
+
+                topRight = new LatLng(tr[0], tr[1]);
+                topLeft = new LatLng(tl[0], tl[1]);
+            }
+            refreshMarkers(topLeft, topRight, center, zoom, -bearing, rootLayout);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -160,9 +178,6 @@ public class HandelMarker {
         return new APoint(latLng.latitude, latLng.longitude);
     }
 
-
-
-
     private static double toDeg(double rad) {
         return rad * 180 / Math.PI;
     }
@@ -189,5 +204,23 @@ public class HandelMarker {
 
     }
 
-
+    /**
+     * Calculate distance between two points in latitude and longitude taking
+     * into account height difference. If you are not interested in height
+     * difference pass 0.0. Uses Haversine method as its base.
+     * <p>
+     * lat1, lon1 Start point lat2, lon2 End point el1 Start altitude in meters
+     * el2 End altitude in meters
+     *
+     * @returns Distance in Meters
+     */
+    public static double distance(double lat1, double lon1, double lat2, double lon2) {
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadius * c;
+    }
 }

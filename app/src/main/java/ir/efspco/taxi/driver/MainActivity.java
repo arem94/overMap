@@ -23,6 +23,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         MapView nMap = findViewById(R.id.map);
         nMap.moveCamera(new org.neshan.common.model.LatLng(centerLat, centerLng), 0);
-        nMap.setZoom(zoom,0);
+        nMap.setZoom(zoom, 0);
 
         Button btnAddMarker = findViewById(R.id.btnAddMarker);
         RelativeLayout googleMapLayout = findViewById(R.id.googleMapLayout);
@@ -69,12 +70,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if (googleActive) {
                     nMap.setVisibility(View.GONE);
                     googleMapLayout.setVisibility(View.VISIBLE);
-                    gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(centerLat, centerLng), zoom));
+                    CameraPosition position = new CameraPosition(new LatLng(centerLat, centerLng), zoom, 0, bearing);
+                    gMap.moveCamera(CameraUpdateFactory.newCameraPosition(position));
                 } else {
                     nMap.setVisibility(View.VISIBLE);
                     googleMapLayout.setVisibility(View.GONE);
                     nMap.moveCamera(new org.neshan.common.model.LatLng(centerLat, centerLng), 0);
-                    nMap.setZoom(zoom,0);
+                    nMap.setZoom(zoom, 0);
+                    if (bearing < 180) {
+                        nMap.setBearing(-bearing, 0);
+                    } else {
+                        nMap.setBearing(360 - bearing, 0);
+                    }
                 }
             }
         });
@@ -90,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View view) {
                 try {
-                    AMarker aMarker = new AMarker(getApplicationContext(),centerLat, centerLng).setBearing(90);
+                    AMarker aMarker = new AMarker(getApplicationContext(), centerLat, centerLng).setBearing(90).setEnableZoomWithMap(true).setEnableRotateWithMap(true);
                     HandelMarker.addMarker(aMarker, options);
 
                 } catch (Exception e) {
@@ -118,6 +125,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             centerLng = nMap.getCameraTargetPosition().getLongitude();
                             zoom = nMap.getZoom();
                             bearing = nMap.getBearing();
+                            if (bearing < 0) {
+                                bearing = Math.abs(bearing);
+                            } else {
+                                bearing = 360 - bearing;
+                            }
+                            Log.i("TAG", "onCameraMove: " + bearing);
 
 //                            map.moveCamera(new org.neshan.common.model.LatLng(centerLat, centerLng), zoom);
                         }
@@ -151,11 +164,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onCameraMove() {
                 if (googleActive) {
-                    HandelMarker.refreshMarkers(map, options);
-                    centerLat = map.getCameraPosition().target.latitude;
-                    centerLng = map.getCameraPosition().target.longitude;
-                    bearing = map.getCameraPosition().bearing;
-                    zoom = map.getCameraPosition().zoom;
+                    HandelMarker.refreshMarkers(gMap, options);
+                    centerLat = gMap.getCameraPosition().target.latitude;
+                    centerLng = gMap.getCameraPosition().target.longitude;
+                    bearing = gMap.getCameraPosition().bearing;
+                    zoom = gMap.getCameraPosition().zoom;
+                    Log.i("TAG", "onCameraMove: " + bearing);
 //                    refreshMarker(gMap.getCameraPosition().target.latitude, gMap.getCameraPosition().target.longitude, gMap.getCameraPosition().zoom, gMap.getCameraPosition().bearing);
 //                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(centerLat, centerLng), zoom));
                 }
