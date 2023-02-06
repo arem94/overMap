@@ -3,40 +3,25 @@ package ir.efspco.taxi.driver;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.graphics.Point;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.Window;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 
-import com.carto.styles.MarkerStyle;
-import com.carto.styles.MarkerStyleBuilder;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
-import org.neshan.common.model.LatLngBounds;
 import org.neshan.mapsdk.MapView;
-import org.neshan.mapsdk.model.Marker;
-
-import java.util.ArrayList;
 
 import ir.efspco.taxi.driver.alyt.AMarker;
-import ir.efspco.taxi.driver.alyt.APoint;
-import ir.efspco.taxi.driver.alyt.Geometry;
-import ir.efspco.taxi.driver.alyt.HandelMarker;
+import ir.efspco.taxi.driver.alyt.LayoutMarker;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
     ProgressBar btn;
@@ -44,7 +29,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
     boolean googleActive = false;
-
+    LayoutMarker layoutMarker;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +45,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         nMap.moveCamera(new org.neshan.common.model.LatLng(centerLat, centerLng), 0);
         nMap.setZoom(zoom, 0);
 
+
+        layoutMarker = new LayoutMarker(getApplicationContext(),options);
+        layoutMarker.addMarkerClickListener(new LayoutMarker.Listener() {
+            @Override
+            public void click(AMarker marker) {
+                Log.i("TAG", "click: "+marker.lat+"   "+marker.lng);
+            }
+        });
         Button btnAddMarker = findViewById(R.id.btnAddMarker);
         RelativeLayout googleMapLayout = findViewById(R.id.googleMapLayout);
         Button btnChangeMap = findViewById(R.id.btnChangeMap);
@@ -67,21 +60,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View view) {
                 googleActive = !googleActive;
+
                 if (googleActive) {
                     nMap.setVisibility(View.GONE);
                     googleMapLayout.setVisibility(View.VISIBLE);
                     CameraPosition position = new CameraPosition(new LatLng(centerLat, centerLng), zoom, 0, bearing);
                     gMap.moveCamera(CameraUpdateFactory.newCameraPosition(position));
                 } else {
+                    if (bearing < 180) {
+                        nMap.setBearing(-bearing, 0);
+                    } else {
+                        nMap.setBearing(360-bearing, 0);
+                    }
                     nMap.setVisibility(View.VISIBLE);
                     googleMapLayout.setVisibility(View.GONE);
                     nMap.moveCamera(new org.neshan.common.model.LatLng(centerLat, centerLng), 0);
                     nMap.setZoom(zoom, 0);
-                    if (bearing < 180) {
-                        nMap.setBearing(-bearing, 0);
-                    } else {
-                        nMap.setBearing(360 - bearing, 0);
-                    }
+
                 }
             }
         });
@@ -98,7 +93,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onClick(View view) {
                 try {
                     AMarker aMarker = new AMarker(getApplicationContext(), centerLat, centerLng).setBearing(90).setEnableZoomWithMap(true).setEnableRotateWithMap(true);
-                    HandelMarker.addMarker(aMarker, options);
+                    layoutMarker.addMarker(aMarker, options);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -116,21 +111,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     @Override
                     public void onCameraMove() {
                         if (!googleActive) {
-                            HandelMarker.refreshMarkers(nMap.getCameraTargetPosition().getLatitude(),
-                                    nMap.getCameraTargetPosition().getLongitude(),
-                                    nMap.getZoom(),
-                                    nMap.getBearing(),
-                                    options);
-                            centerLat = nMap.getCameraTargetPosition().getLatitude();
-                            centerLng = nMap.getCameraTargetPosition().getLongitude();
-                            zoom = nMap.getZoom();
                             bearing = nMap.getBearing();
-                            if (bearing < 0) {
+
+                            if (bearing <= 0) {
                                 bearing = Math.abs(bearing);
                             } else {
                                 bearing = 360 - bearing;
                             }
-                            Log.i("TAG", "onCameraMove: " + bearing);
+                            centerLat = nMap.getCameraTargetPosition().getLatitude();
+                            centerLng = nMap.getCameraTargetPosition().getLongitude();
+                            zoom = nMap.getZoom();
+
+                            layoutMarker.sync(centerLat,
+                                    centerLng,
+                                    zoom,
+                                    bearing);
+
 
 //                            map.moveCamera(new org.neshan.common.model.LatLng(centerLat, centerLng), zoom);
                         }
@@ -164,12 +160,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onCameraMove() {
                 if (googleActive) {
-                    HandelMarker.refreshMarkers(gMap, options);
+                    layoutMarker.sync(gMap);
                     centerLat = gMap.getCameraPosition().target.latitude;
                     centerLng = gMap.getCameraPosition().target.longitude;
                     bearing = gMap.getCameraPosition().bearing;
                     zoom = gMap.getCameraPosition().zoom;
-                    Log.i("TAG", "onCameraMove: " + bearing);
+                    Log.i("TAG", "onCameraMove: "+bearing );
 //                    refreshMarker(gMap.getCameraPosition().target.latitude, gMap.getCameraPosition().target.longitude, gMap.getCameraPosition().zoom, gMap.getCameraPosition().bearing);
 //                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(centerLat, centerLng), zoom));
                 }

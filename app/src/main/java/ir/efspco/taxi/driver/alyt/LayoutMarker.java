@@ -1,6 +1,7 @@
 package ir.efspco.taxi.driver.alyt;
 
-import android.graphics.Point;
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -9,19 +10,29 @@ import android.widget.RelativeLayout;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.material.transition.MaterialSharedAxis;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
-import ir.efspco.taxi.driver.alyt.AMarker;
-import ir.efspco.taxi.driver.alyt.APoint;
+public class LayoutMarker {
+    Context context;
+    View rootLayout;
 
-public class HandelMarker {
+    public LayoutMarker(Context context, View rootLayout, int tilePixel) {
+        this.tilePixel = tilePixel;
+        this.context = context;
+        this.rootLayout = rootLayout;
 
-    public static ArrayList<AMarker> markers = new ArrayList<>();
 
-    public static void floatMarker(AMarker marker, float zoom, float bearing, APoint point, int screenWidth, int screenHigh) {
+    }
+
+    public LayoutMarker(Context context, View rootLayout) {
+        this.context = context;
+        this.rootLayout = rootLayout;
+    }
+
+    private ArrayList<AMarker> markers = new ArrayList<>();
+
+    private void floatMarker(AMarker marker, float zoom, float bearing, APoint point, int screenWidth, int screenHigh) {
 
         float defZoom = 14f;
         if (zoom > defZoom) {
@@ -81,36 +92,54 @@ public class HandelMarker {
             marker.view.setRotation(marker.bearing - bearing);
     }
 
+    private Listener listener;
 
-    public static void addMarker(AMarker aMarker, RelativeLayout layout) {
+    public interface Listener {
+        public void click(AMarker marker);
+    }
+
+    public void addMarkerClickListener(Listener listener) {
+        this.listener = listener;
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    public void addMarker(AMarker aMarker, RelativeLayout layout) {
         markers.add(aMarker);
         layout.addView(aMarker.view);
 
     }
 
-    public static void refreshMarkers(GoogleMap map, View rootLayout) {
+
+    public void sync(GoogleMap map) {
         Projection projection = map.getProjection();
         LatLng topLeft = projection.getVisibleRegion().farLeft;
         LatLng topRight = projection.getVisibleRegion().farRight;
         LatLng c = map.getCameraPosition().target;
-        refreshMarkers(topLeft, topRight, c, map.getCameraPosition().zoom, map.getCameraPosition().bearing, rootLayout);
+        sync(topLeft, topRight, c, map.getCameraPosition().zoom, map.getCameraPosition().bearing);
     }
 
-    static int tilePixel = 512;
-    static int earthRadius = 6378160;
-    static double angle = 0;
-    static float f = (float) (earthRadius * 2 * Math.PI / tilePixel);
+    private int tilePixel = 256;
+    private final int earthRadius = 6378160;
+    private static double angle = 0;
 
-    public static void refreshMarkers(double cLat, double cLng, float zoom, float bearing, View rootLayout) {
+    public double getMeterPerPixel(double lat, double zoom) {
+        double pixelsPerTile = tilePixel * ((double) context.getResources().getDisplayMetrics().densityDpi / 160);
+        double numTiles = Math.pow(2, zoom);
+        double earthPerimeter = earthRadius * 2 * Math.PI;
+        double metersPerTile = Math.cos(Math.toRadians(lat)) * earthPerimeter / numTiles;
+        return metersPerTile / pixelsPerTile;
+    }
 
+    public void sync(double cLat, double cLng, float zoom, float bearing) {
         try {
-            double metersPerPx = f * Math.cos(cLat * Math.PI / 180) / Math.pow(2, zoom);
+            double metersPerPx = getMeterPerPixel(cLat, zoom);
+
             double[] latlng = destinationPoint(cLat, cLng, 0,
-                    (float) ((rootLayout.getHeight() - tilePixel) / 2 * metersPerPx) / 1000);
+                    (float) (rootLayout.getHeight() / 2 * metersPerPx) / 1000);
             double[] latlng1 = destinationPoint(cLat, cLng, 90,
-                    (float) ((rootLayout.getWidth() - tilePixel / 2) / 2 * metersPerPx) / 1000);
+                    (float) (rootLayout.getWidth() / 2 * metersPerPx) / 1000);
             double[] latlng2 = destinationPoint(cLat, cLng, -90,
-                    (float) ((rootLayout.getWidth() - tilePixel / 2) / 2 * metersPerPx) / 1000);
+                    (float) (rootLayout.getWidth() / 2 * metersPerPx) / 1000);
 
 
             LatLng topRight = new LatLng(latlng[0], latlng1[1]);
@@ -118,27 +147,25 @@ public class HandelMarker {
             LatLng center = new LatLng(cLat, cLng);
 
             if (bearing != 0) {
-                double dist = distance(latlng[0], latlng1[1], cLat, cLng)/1000;
+                double dist = distance(latlng[0], latlng1[1], cLat, cLng) / 1000;
                 if (angle == 0) {
                     double chord = Math.sqrt(Math.pow(rootLayout.getWidth(), 2) + Math.pow(rootLayout.getHeight(), 2));
                     angle = toDeg(Math.acos(rootLayout.getWidth() / chord));
                 }
-                double[] tr = destinationPoint(cLat, cLng, 90-angle-bearing, dist);
-                double[] tl = destinationPoint(cLat, cLng, -(90-angle+bearing), dist);
-//                Log.i("TAG", "refreshMarkers: "+cLat+"  "+cLng+" "+(90-angle)+"  "+ dist);
-                Log.i("TAG", "refreshMarkers: "+tr[0]+ " , "+ tr[1] +"                 "+tl[0]+" , "+ tl[1]);
+                double[] tr = destinationPoint(cLat, cLng, 90 - angle + bearing, dist);
+                double[] tl = destinationPoint(cLat, cLng, -(90 - angle - bearing), dist);
 
                 topRight = new LatLng(tr[0], tr[1]);
                 topLeft = new LatLng(tl[0], tl[1]);
             }
-            refreshMarkers(topLeft, topRight, center, zoom, -bearing, rootLayout);
+            sync(topLeft, topRight, center, zoom, bearing);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void refreshMarkers(LatLng topLeft, LatLng topRight, LatLng c, float zoom, float bearing, View rootLayout) {
+    private void sync(LatLng topLeft, LatLng topRight, LatLng c, float zoom, float bearing) {
 
         LatLng bottomRight = new LatLng((c.latitude - topLeft.latitude) + c.latitude, (c.longitude - topLeft.longitude) + c.longitude);
         LatLng bottomLeft = new LatLng((c.latitude - topRight.latitude) + c.latitude, (c.longitude - topRight.longitude) + c.longitude);
@@ -160,13 +187,27 @@ public class HandelMarker {
             }
         }
 
+        int[] params = new int[2];
 
         rootLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 Log.i("AMIRRRRR", "onTouch: " + motionEvent.getX());
                 Log.i("AMIRRRRR1", "onTouch: " + motionEvent.getY());
+                Log.i("AMIRRRRR12", "onTouch: " + motionEvent.getAction());
+                float y = motionEvent.getY();
+                float x = motionEvent.getX();
 
+                for (AMarker a : markers) {
+                    a.view.getLocationOnScreen(params);
+
+                    if (x <= params[0] && x >= (params[0] +  a.view.getWidth())) {
+                        if (y <= params[1] && y >= (params[1] +  a.view.getHeight())) {
+                            Log.d("tag", "this touch is in button area");
+                            // do what you want to do when touch/click comes in button area
+                        }
+                    }
+                }
                 return false;
             }
         });
@@ -174,19 +215,29 @@ public class HandelMarker {
 
     }
 
-    private static APoint toAPoint(LatLng latLng) {
+    private APoint toAPoint(LatLng latLng) {
         return new APoint(latLng.latitude, latLng.longitude);
     }
 
-    private static double toDeg(double rad) {
+    private double toDeg(double rad) {
         return rad * 180 / Math.PI;
     }
 
-    private static double toRad(double deg) {
+    private double toRad(double deg) {
         return deg * Math.PI / 180;
     }
 
-    private static double[] destinationPoint(double lat, double lng, double brng, double dist) {
+    /**
+     * calculate new location by another location and distance
+     * you must passed a location and distance to another location with bearing and you get new location
+     *
+     * @param lat
+     * @param lng
+     * @param brng
+     * @param dist
+     * @return
+     */
+    private double[] destinationPoint(double lat, double lng, double brng, double dist) {
         dist = dist / 6371;
         brng = toRad(brng);
 
@@ -214,7 +265,7 @@ public class HandelMarker {
      *
      * @returns Distance in Meters
      */
-    public static double distance(double lat1, double lon1, double lat2, double lon2) {
+    private double distance(double lat1, double lon1, double lat2, double lon2) {
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
