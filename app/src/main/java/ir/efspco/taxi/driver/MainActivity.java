@@ -92,7 +92,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View view) {
                 try {
-                    AMarker aMarker = new AMarker(getApplicationContext(), centerLat, centerLng).setBearing(90).setEnableZoomWithMap(true).setEnableRotateWithMap(true);
+                    AMarker aMarker = new AMarker(getApplicationContext(), centerLat, centerLng)
+                            .setBearing(90)
+                            .setEnableZoomWithMap(true)
+                            .setEnableRotateWithMap(true);
                     layoutMarker.addMarker(aMarker, options);
 
                 } catch (Exception e) {
@@ -134,9 +137,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 });
             }
         }, 1000);
-
     }
-
 
     int height;
     int width;
@@ -146,7 +147,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     double centerLng = 59.56;
     float zoom = 14;
     float bearing = 14;
-
 
     GoogleMap gMap;
 

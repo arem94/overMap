@@ -21,8 +21,6 @@ public class LayoutMarker {
         this.tilePixel = tilePixel;
         this.context = context;
         this.rootLayout = rootLayout;
-
-
     }
 
     public LayoutMarker(Context context, View rootLayout) {
@@ -189,28 +187,32 @@ public class LayoutMarker {
 
         int[] params = new int[2];
 
-        rootLayout.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                Log.i("AMIRRRRR", "onTouch: " + motionEvent.getX());
-                Log.i("AMIRRRRR1", "onTouch: " + motionEvent.getY());
-                Log.i("AMIRRRRR12", "onTouch: " + motionEvent.getAction());
-                float y = motionEvent.getY();
-                float x = motionEvent.getX();
-
-                for (AMarker a : markers) {
-                    a.view.getLocationOnScreen(params);
-
-                    if (x <= params[0] && x >= (params[0] +  a.view.getWidth())) {
-                        if (y <= params[1] && y >= (params[1] +  a.view.getHeight())) {
-                            Log.d("tag", "this touch is in button area");
-                            // do what you want to do when touch/click comes in button area
-                        }
-                    }
-                }
-                return false;
-            }
-        });
+//        rootLayout.setOnTouchListener(new View.OnTouchListener() {
+//            @Override
+//            public boolean onTouch(View view, MotionEvent motionEvent) {
+//
+//                Log.i("AMIRRRRR1", "onTouch: " + motionEvent.getY());
+//                Log.i("AMIRRRRR12", "onTouch: " + motionEvent.getAction());
+//                float y = motionEvent.getY();
+//                float x = motionEvent.getX();
+//
+//                for (AMarker a : markers) {
+//                    a.view.getLocationOnScreen(params);
+//                    Log.i("AMIRRRRR44", "onTouch: " + x+"  "+y);
+//                    Log.i("AMIRRRRR44", "onTouch: " + (params[0]+(a.view.getWidth()/2))+"  "+(params[0] - (a.view.getWidth()/2)));
+//                    Log.i("AMIRRRRR44", "onTouch: " + params[0]+"  "+params[1]);
+//                    Log.i("AMIRRRRR44", "onTouch: " +(params[0] +  a.view.getWidth())+"  "+ (params[1] +  a.view.getHeight()));
+//
+//                    if (x <= params[0]+(a.view.getWidth()/2) && x >= (params[0] - (a.view.getWidth()/2))) {
+//                        if (y >= params[1] && y <= (params[1] +  a.view.getHeight())) {
+//                            Log.d("tag", "this touch is in button area");
+//                            // do what you want to do when touch/click comes in button area
+//                        }
+//                    }
+//                }
+//                return false;
+//            }
+//        });
 
 
     }
